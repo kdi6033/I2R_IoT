@@ -82,9 +82,46 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시�
 |---|---|:---:|
 | 01_KoreaTime | 공유기에 접속해 인터넷에서 한국 시간을 받아 1초마다 시리얼에 보여 주기 | 🛠️ |
 | MqttTest | test.mosquitto.org로 5초마다 상태 보내기, `{"c":"gs"}`, `{"c":"echo"}`에 답하기 | 🛠️ |
-| NetCheck | Wi-Fi, MQTT, 시간을 5초마다 보기. 공유기를 꺼도 loop가 멈추지 않는지 확인 | 🛠️ |
 
-**MQTT 메시지 보기, 보내기:** 브라우저에서 [HiveMQ WebSocket Client](https://www.hivemq.com/demos/websocket-client/)를 열고 Host `test.mosquitto.org`, Port `8081`, SSL 체크 → Connect. 보드는 1883, 브라우저는 8081을 쓰지만 같은 서버라 토픽만 같으면 메시지가 오갑니다. 공개 서버라 누구나 볼 수 있으니 개인 정보는 넣지 마세요.
+## 프로토콜 확인: i2r 시뮬레이터
+
+i2r 프로토콜은 [i2r-server의 시뮬레이터](https://github.com/kdi6033/i2r-server/tree/main/sim)로 확인합니다.
+시뮬레이터는 PC에 **가상 i2r 보드**와 **제어 화면**을 띄웁니다. 가상 보드는 실제 보드 펌웨어와 같은 메시지를 주고받으므로, 내 보드가 보내야 할 메시지의 **정답 예시**가 됩니다.
+
+**1. 준비 (처음 한 번)**
+
+- [Python 3](https://www.python.org/downloads/) 설치 (Windows는 **Add python.exe to PATH** 체크)
+- `git clone https://github.com/kdi6033/i2r-server` (또는 Code → Download ZIP)
+- `python -m pip install "paho-mqtt>=2.0"`
+
+**2. 켜기**
+
+```
+cd i2r-server/sim
+python sim.py --boards 2
+```
+
+Windows는 `sim/start-sim.bat`을 두 번 눌러도 됩니다. 브라우저에 **http://localhost:8000** 이 열립니다. 끌 때는 창에서 **Ctrl+C**.
+
+**3. 메시지 보기**
+
+| 화면 | 보이는 것 |
+|---|---|
+| 가상 보드 카드 | **IN1~IN4**를 누르면 상태 메시지(`{"m":..,"in":[..],"out":[..],...}`)가 나가고, 받은 명령과 보낸 메시지가 카드 아래에 보입니다 |
+| 제어 화면 | 스위치를 누르면 `so` 명령을 보내고, 보드가 보낸 상태로 화면이 바뀝니다. 입력, 스위치 이름, 온도·습도를 누르면 `bio`, `sch`, `bs` 설정 창이 열립니다 |
+
+**4. 내 보드와 함께 보기**
+
+시뮬레이터를 **내 보드와 같은 서버, 같은 그룹**으로 켜면 내 보드도 제어 화면의 보드 목록에 나타납니다. 그룹은 보드 시리얼 모니터에 나오는 토픽 `i2r/<그룹>/out`의 가운데 부분입니다.
+
+```
+python sim.py --server test.mosquitto.org --group <내 보드 그룹>
+```
+
+- 제어 화면에는 상태 메시지에 `in`, `out`이 있는 보드만 나옵니다. MqttTest 예제처럼 `in`, `out`을 보내지 않는 보드는 목록에 나오지 않습니다.
+- 공통 프로토콜(`I2R_Link.h`, 만들 예정)을 쓰는 보드는 시뮬레이터의 규칙 시험으로 검사할 수 있습니다: `python test_protocol.py --server test.mosquitto.org --group <그룹> --mac <MAC>`
+
+**주의**: test.mosquitto.org는 공개 서버라 누구나 토픽을 보고 명령을 보낼 수 있습니다. 내 보드의 그룹과 MAC을 공개된 곳(GitHub, 카페 글)에 적지 말고, 개인 정보를 메시지에 넣지 마세요. 시뮬레이터만 쓸 때는 그룹을 정하지 않으면 실행할 때마다 `sim-` 뒤 임의 코드로 바뀝니다.
 
 ## 다음에 만들 것
 

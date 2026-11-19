@@ -2,7 +2,7 @@
 # 사용: powershell -ExecutionPolicy Bypass -File send-si.ps1 [-Port COM3]
 #   -Port를 빼면 CH340(i2r 보드 USB 칩) 포트를 스스로 찾는다.
 # 비밀번호는 화면에 보이지 않게 입력받고, 어디에도 저장하지 않는다.
-# 보드에서 I2R_IoT 예제(NetCheck, MqttTest 등)가 돌고 있어야 한다. 시리얼 모니터는 닫아 둔다.
+# 보드에서 I2R_IoT 예제(01_KoreaTime, MqttTest 등)가 돌고 있어야 한다. 시리얼 모니터는 닫아 둔다.
 param([string]$Port = "")
 
 function Read-Secret([string]$prompt) {
