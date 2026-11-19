@@ -1,25 +1,44 @@
 # I2R_IoT
 
-> 🛠️ **만드는 중입니다 (0.1.0).** 함수를 하나씩 만들고 i2r-03 보드에서 확인하고 있습니다. 아래 표의 **상태**를 보세요.
+> 🛠️ **만드는 중입니다 (0.2.0).** 함수를 하나씩 만들고 i2r-03 보드에서 확인하고 있습니다. 아래 표의 **상태**를 보세요.
 > ✅ 보드 확인 완료 (i2r-03) · 🛠️ 만드는 중 (컴파일만 확인, 이름과 동작이 바뀔 수 있음)
 
-i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT(TLS), 시간, i2r 통신 규격을 맡습니다.
-보드 입출력은 다루지 않습니다. PLC(i2r-02, i2r-03, i2r-04)는 [I2R_PLC](https://github.com/kdi6033/I2R_PLC), 로봇은 [OttoI2R](https://github.com/kdi6033/OttoI2R)가 이 라이브러리를 가져다 씁니다.
+i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시간, 설정 받기를 맡습니다.
+보드 입출력은 다루지 않습니다. PLC(i2r-02, i2r-03, i2r-04)는 [I2R_PLC](https://github.com/kdi6033/I2R_PLC), 로봇은 [OttoI2R](https://github.com/kdi6033/OttoI2R)와 함께 씁니다.
 
 ## 설계 원칙
 
 | 원칙 | 내용 |
 |---|---|
 | PLC를 멈추지 않음 | Wi-Fi와 MQTT는 ESP32 두 번째 코어(core 0)에서 돕니다. 서버에 닿지 않아도 `loop()`는 멈추지 않습니다 |
-| 서버를 고치지 않음 | 공식 펌웨어와 같은 토픽(`i2r/{email}/in`, `out`), 접속 방식(8883 TLS, client id = MAC), 메시지 필드를 씁니다 |
-| 설정이 이어짐 | 공식 펌웨어와 같은 NVS 자리(`netcfg`, `certs`, `i2r`)를 씁니다. 공식 펌웨어로 설정해 둔 보드에 올려도 다시 설정하지 않아도 됩니다 |
-| 비밀 값은 코드에 없음 | Wi-Fi 비밀번호, 이메일은 USB로 받아 보드에 저장합니다. 인증서와 개인키는 라이브러리에 없습니다 |
+| 내가 고르는 서버 | 검증·교육은 공개 시험 서버(test.mosquitto.org:1883), 집 안은 i2r-05 로컬 서버, 어디서나는 아마존 개인 서버. 서버 주소를 비우면 Wi-Fi만 씁니다 |
+| i2r.link는 쓰지 않음 | i2r.link(mqtt.i2r.link)는 공식 펌웨어 전용입니다. 설정에 그 주소가 오면 접속하지 않고 Wi-Fi만 저장합니다 |
+| 공식 펌웨어 설정을 건드리지 않음 | 설정은 NVS `i2riot`에 따로 저장합니다. 공식 펌웨어를 다시 설치하면 원래 설정 그대로 i2r.link에 접속됩니다 (시간대 `i2r`만 함께 씀) |
+| 개인 정보를 내보내지 않음 | 이메일은 저장하지 않습니다. 토픽은 `i2r/{그룹}/in`, `out`이고, 그룹 기본값은 MAC으로 만든 코드(`d4d4da73873c`)입니다 |
+| 비밀 값은 코드에 없음 | Wi-Fi와 MQTT 비밀번호는 USB로 받아 보드에 저장하고, 시리얼에 찍지 않습니다 |
 
 ## 설치
 
-0.1.0은 Library Manager에 아직 없습니다. 이 저장소를 `Documents/Arduino/libraries/I2R_IoT`에 받고, Library Manager에서 **PubSubClient**, **ArduinoJson**(7 이상)을 설치합니다.
+아직 Library Manager에 없습니다. 이 저장소를 `Documents/Arduino/libraries/I2R_IoT`에 받고, Library Manager에서 **PubSubClient**, **ArduinoJson**(7 이상)을 설치합니다.
 
 보드 설정: ESP32 Dev Module, Flash Size 8MB, Partition Scheme Huge APP. esp32 보드 패키지 3.0 이상.
+
+## 설정 보내기 (USB)
+
+보드에 I2R_IoT 예제가 올라가 있을 때 아래 중 하나로 보냅니다. 저장되면 `{"c":"si","ok":true}` 응답 뒤 다시 시작합니다.
+
+1. **PC 스크립트** (비밀번호가 화면에 보이지 않음, 포트를 스스로 찾음)
+   ```
+   powershell -ExecutionPolicy Bypass -File tools\send-si.ps1
+   ```
+   공유기 이름과 비밀번호를 넣고 나머지는 Enter를 누르면 test.mosquitto.org:1883, 그룹은 MAC 기반이 됩니다.
+2. **i2r.link 기기연결 → COM 포트 (USB)**: 이메일 칸은 비우고, 서버 칸에 `test.mosquitto.org`(또는 내 서버)를 넣습니다. 포트, 아이디, 그룹은 1번 방법으로만 넣을 수 있습니다.
+3. **시리얼 모니터**(115200, 새 줄)에 한 줄:
+   ```
+   {"c":"si","ssid":"공유기","password":"비밀번호","mqttBroker":"test.mosquitto.org","mqttPort":1883,"mqttUser":"","mqttPass":"","g":""}
+   ```
+
+**MQTT나 웹으로 온 `si`는 받지 않습니다.** 남이 공개 서버로 내 보드 설정을 바꾸지 못하게 하기 위해서입니다.
 
 ## 함수
 
@@ -29,9 +48,11 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT(TLS), 
 |---|---|:---:|
 | `itime.begin()` | `setup()`에서 한 번. 저장된 시간대를 읽고, 시계가 비어 있으면 마지막 저장 시각에서 이어 감 | 🛠️ |
 | `itime.update()` | `loop()`에서 매번. Wi-Fi가 연결되면 NTP를 시작하고 시간을 가끔 저장 | 🛠️ |
-| `itime.valid()` | 시간이 맞는지 (TLS 접속에 필요) | 🛠️ |
+| `itime.setTz(초)` | 시간대 정하기 (한국 `9 * 3600`). 저장하지 않음 | 🛠️ |
+| `itime.valid()` | 시간이 맞는지 | 🛠️ |
 | `itime.synced()`, `itime.restored()` | NTP로 맞췄는지 / 저장된 시각에서 이어 가는 중인지 | 🛠️ |
 | `itime.now()` | 현지 시각 epoch | 🛠️ |
+| `itime.local(tm)` | 현지 시각을 연, 월, 일, 요일로 나눠 받기 | 🛠️ |
 | `itime.text()` | `"10:44:05"` | 🛠️ |
 | `itime.hour()`, `minute()`, `second()`, `weekday()` | 현지 시, 분, 초, 요일(0 = 일요일) | 🛠️ |
 | `itime.tz()` | 시간대 (초, 한국 = 32400) | 🛠️ |
@@ -43,29 +64,32 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT(TLS), 
 |---|---|:---:|
 | `net.begin()` | `setup()`에서 한 번. 설정이 있으면 통신 시작 (기다리지 않음), 없으면 통신 없이 동작 | 🛠️ |
 | `net.update()` | `loop()`에서 매번. 받은 메시지를 내 함수로 넘기고 USB 설정 줄을 읽음 | 🛠️ |
-| `net.onMessage(함수)` | 받은 메시지 `함수(json, from)`. `from`은 `I2R_FROM_MQTT` 또는 `I2R_FROM_USB` | 🛠️ |
+| `net.onMessage(함수)` | 받은 메시지 `함수(json, from)`. `from`은 `I2R_FROM_MQTT`, `I2R_FROM_USB`, `I2R_FROM_WEB` | 🛠️ |
 | `net.onConnect(함수)` | MQTT에 접속될 때마다 (상태를 다시 보낼 때) | 🛠️ |
-| `net.publish(json)` | 내 메시지 보내기 (`i2r/{email}/out`). 끊겨 있으면 `false` | 🛠️ |
-| `net.publishIn(json)` | 같은 사용자의 다른 보드에게 (`i2r/{email}/in`) | 🛠️ |
-| `net.configured()`, `net.hasCerts()` | 설정이 있는지 / 인증서가 있는지 | 🛠️ |
+| `net.publish(json)` | 내 메시지 보내기 (`i2r/{그룹}/out`). 끊겨 있으면 `false` | 🛠️ |
+| `net.publishIn(json)` | 같은 그룹의 다른 보드에게 (`i2r/{그룹}/in`) | 🛠️ |
+| `net.inject(json, from)` | 다른 통로(보드 홈페이지 등)에서 받은 명령을 같은 처리로 넘기기 | 🛠️ |
+| `net.configured()`, `net.mqttConfigured()` | Wi-Fi 설정이 있는지 / MQTT 서버 설정이 있는지 | 🛠️ |
 | `net.wifiConnected()`, `net.mqttConnected()` | 연결 상태 | 🛠️ |
-| `net.mac()`, `email()`, `broker()`, `ssid()` | 기기 ID(MAC 대문자)와 저장된 설정 (비밀번호는 읽을 수 없음) | 🛠️ |
-| `net.fails()`, `lastRc()`, `lastSslError()` | 접속 실패 횟수와 원인 | 🛠️ |
-| `net.setTls(false)`, `net.setPort(1883)` | 로컬 서버용 (`begin()` 전에) | 🛠️ |
+| `net.mac()`, `ssid()`, `broker()`, `port()`, `user()`, `group()`, `ip()` | 기기 ID(MAC 대문자)와 저장된 설정 (비밀번호는 읽을 수 없음) | 🛠️ |
+| `net.inTopic()`, `net.outTopic()` | 받기, 보내기 토픽 | 🛠️ |
+| `net.fails()`, `net.lastRc()`, `I2R_Net::rcText(rc)` | 접속 실패 횟수와 원인 (원인은 읽을 수 있는 말로) | 🛠️ |
 | `net.setRestartAfterFails(n)` | MQTT가 n번 연속 실패하면 다시 시작 (기본 0 = 안 함) | 🛠️ |
-
-**USB 설정:** 시리얼(115200)로 `{"c":"si","ssid":"...","password":"...","e":"...","mqttBroker":"..."}` 한 줄을 보내면 저장하고 `{"c":"si","ok":true}` 응답 뒤 다시 시작합니다. i2r.link의 "COM 포트 설정 전송"과 같습니다. **MQTT로 온 `si`는 받지 않습니다.**
 
 ## 예제
 
 | 예제 | 내용 | 상태 |
 |---|---|:---:|
+| 01_KoreaTime | 공유기에 접속해 인터넷에서 한국 시간을 받아 1초마다 시리얼에 보여 주기 | 🛠️ |
+| MqttTest | test.mosquitto.org로 5초마다 상태 보내기, `{"c":"gs"}`, `{"c":"echo"}`에 답하기 | 🛠️ |
 | NetCheck | Wi-Fi, MQTT, 시간을 5초마다 보기. 공유기를 꺼도 loop가 멈추지 않는지 확인 | 🛠️ |
-| StateToDashboard | 공식 펌웨어와 같은 상태 메시지를 보내 i2r.link 화면에 뜨는지 확인 (릴레이는 안 움직임) | 🛠️ |
+
+**MQTT 메시지 보기, 보내기:** 브라우저에서 [HiveMQ WebSocket Client](https://www.hivemq.com/demos/websocket-client/)를 열고 Host `test.mosquitto.org`, Port `8081`, SSL 체크 → Connect. 보드는 1883, 브라우저는 8081을 쓰지만 같은 서버라 토픽만 같으면 메시지가 오갑니다. 공개 서버라 누구나 볼 수 있으니 개인 정보는 넣지 마세요.
 
 ## 다음에 만들 것
 
-- `I2R_Link.h`: 공통 프로토콜 (봉투 `m`, `e`, `t`, `fr`, 명령 `gs`, `st`, 상태 보내기, 보드 고유 명령은 `onCommand()`로)
-- I2R_PLC의 `I2R_PLC_IoT.h`: 원격 `so` → `plc.output()`
+- `I2R_Web.h`: 보드 홈페이지 (stand alone, 입력 표시, 출력 스위치)
+- `I2R_Link.h`: 공통 프로토콜 (봉투 `m`, `e`, `t`, `fr`, MAC 규칙, `gs`, `st`, `onCommand()`)
+- 8883 TLS + 아이디·비밀번호 (아마존 개인 서버)
 
 통신 규격: [i2r 통신 프로토콜](https://github.com/kdi6033/i2r#-5-i2r-%ED%86%B5%EC%8B%A0-%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C)

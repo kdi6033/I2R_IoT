@@ -3,11 +3,11 @@
 //   I2R_Time itime;
 //   setup(): itime.begin();
 //   loop():  itime.update();      // 기다리지 않음
-//   itime.valid()  → 시간이 맞는지 (TLS 접속에 필요)
+//   itime.valid()  → 시간이 맞는지 (스케줄, 나중에 TLS 접속에 필요)
 //   itime.text()   → "10:44:05" (현지 시각)
 //
 // 공식 펌웨어(v2.0)와 같은 저장 자리를 쓴다: NVS "i2r" 이름공간의 tz_offset(초), savedTime(현지 epoch).
-// 그래서 공식 펌웨어에서 맞춘 시간대가 그대로 이어진다.
+// 그래서 공식 펌웨어에서 맞춘 시간대가 그대로 이어진다. (시간대와 시각만 함께 쓰고, 접속 설정은 따로 둔다)
 // 시스템 시계는 UTC로 두고, 현지 시각은 now() = UTC + 시간대로 계산한다.
 
 #ifndef I2R_TIME_H
@@ -22,7 +22,7 @@
 
 class I2R_Time {
 public:
-  // 2026-02-03 00:00 UTC (i2r 서버 인증서 시작일). 이보다 이르면 시간이 아직 없는 것으로 본다.
+  // 2026-02-03 00:00 UTC. 이보다 이르면 시간이 아직 없는 것으로 본다.
   static const time_t VALID_AFTER = 1770076800;
 
   // setup()에서 한 번. 저장된 시간대를 읽고, 시계가 비어 있으면 마지막으로 저장한 시각에서 이어 간다.
@@ -59,6 +59,7 @@ public:
   bool synced() const { return _synced; }        // 이번에 켜진 뒤 NTP로 맞췄는지
   bool restored() const { return _restored; }    // NTP 없이 저장된 시각에서 이어 가는 중인지
   long tz() const { return _tz; }                // 시간대 (초, 한국 = 32400)
+  void setTz(long sec) { _tz = sec; }            // 시간대 정하기 (begin() 뒤에. 저장하지 않음). 한국: setTz(9 * 3600)
 
   time_t now() const { return time(nullptr) + _tz; }  // 현지 시각 epoch (v2.0의 lastNtpTime과 같은 뜻)
 
