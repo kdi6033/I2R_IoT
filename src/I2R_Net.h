@@ -18,6 +18,11 @@
 //   공식 펌웨어의 설정 자리(netcfg, certs)는 읽지도 쓰지도 않는다.
 //   그래서 공식 펌웨어를 다시 설치하면 원래 설정 그대로 i2r.link에 접속된다.
 //
+// [online/offline] MQTT 유언(Last Will)을 쓴다 (기본 켜짐, setLastWill(false)로 끔).
+//   접속할 때 서버에 {"c":"lw","fr":MAC,"on":0}을 맡겨 두면, 전원이 꺼지거나 Wi-Fi가 끊겨
+//   보드가 사라졌을 때 서버가 대신 i2r/{그룹}/out에 보낸다 (keepalive 30초 → 최대 약 45초 뒤).
+//   접속되면 보드가 직접 {"c":"lw","fr":MAC,"on":1}을 보낸다. 살아 있는 동안에는 추가 통신이 없다.
+//
 // [안전] si는 USB에서만 받는다 (MQTT로 온 si는 무시). 비밀번호를 시리얼에 찍지 않는다.
 //   통신이 계속 실패해도 기본으로는 다시 시작하지 않는다 (setRestartAfterFails로 켤 수 있음).
 
@@ -43,6 +48,7 @@ public:
   static const unsigned long MQTT_RETRY_MS = 10000;  // MQTT 다시 접속 간격
   static const unsigned long IGNORE_MS = 5000;       // 켠 뒤 받은 메시지를 무시하는 시간 (서버에 남아 있던 옛 명령)
   static const uint16_t DEFAULT_PORT = 1883;
+  static const uint16_t KEEPALIVE_SEC = 30;          // 서버와 살아 있음 확인 간격. 끊기면 약 1.5배 뒤 유언이 나간다
 
   typedef void (*MessageFn)(const char *json, I2R_Source from);
   typedef void (*EventFn)();
@@ -50,6 +56,7 @@ public:
   // ---- begin() 전에 부르는 설정 ----
   void setRestartAfterFails(uint8_t n) { _restartAfter = n; }  // MQTT가 n번 연속 실패하면 다시 시작 (0 = 안 함)
   void setSerialSetup(bool on) { _serialSetup = on; }  // USB로 JSON 한 줄 받기 (기본 켜짐)
+  void setLastWill(bool on) { _lastWill = on; }        // 끊김 알림 lw (기본 켜짐). 위 [online/offline] 참고
   void setLog(bool on) { _log = on; }                  // 접속 기록을 시리얼에 찍기 (기본 켜짐)
   void onMessage(MessageFn fn) { _onMsg = fn; }        // 받은 메시지 (si는 여기로 오지 않음)
   void onConnect(EventFn fn) { _onConn = fn; }         // MQTT에 접속될 때마다 (상태를 다시 보낼 때)
@@ -90,7 +97,7 @@ public:
 
     _mqtt.setClient(_plain);
     if (mqttConfigured()) _mqtt.setServer(_broker.c_str(), _port);
-    _mqtt.setKeepAlive(60);
+    _mqtt.setKeepAlive(KEEPALIVE_SEC);
     _mqtt.setSocketTimeout(5);
     _mqtt.setBufferSize(MSG_MAX + 128);
     _mqtt.setCallback([this](char *topic, uint8_t *payload, unsigned int len) {
@@ -165,6 +172,7 @@ private:
   uint16_t _port = DEFAULT_PORT;
   bool _log = true;
   bool _serialSetup = true;
+  bool _lastWill = true;
   uint8_t _restartAfter = 0;
   bool _begun = false;
   unsigned long _startMs = 0;
@@ -377,12 +385,24 @@ private:
           if ((long)(now - nextMqtt) >= 0) {
             if (_log) Serial.printf("[I2R_Net] MQTT 접속 시도: %s:%u\n", _broker.c_str(), (unsigned)_port);
             unsigned long t0 = millis();
-            bool ok = _user.length() > 0
-                          ? _mqtt.connect(_mac.c_str(), _user.c_str(), _mpass.c_str())
-                          : _mqtt.connect(_mac.c_str());
+            const char *user = _user.length() > 0 ? _user.c_str() : nullptr;
+            const char *pass = _user.length() > 0 ? _mpass.c_str() : nullptr;
+            bool ok;
+            if (_lastWill) {
+              // 유언: 보드가 갑자기 사라지면 서버가 대신 보낸다 (retain 안 함)
+              String will = String("{\"c\":\"lw\",\"fr\":\"") + _mac + "\",\"on\":0}";
+              ok = _mqtt.connect(_mac.c_str(), user, pass, _outTopic.c_str(), 0, false, will.c_str());
+            } else {
+              ok = _mqtt.connect(_mac.c_str(), user, pass);
+            }
             unsigned long took = millis() - t0;
             if (ok) {
               _mqtt.subscribe(_inTopic.c_str());
+              if (_lastWill) {
+                // 다시 살아났음을 알린다 (onConnect의 hello, 상태보다 먼저 나간다)
+                String alive = String("{\"c\":\"lw\",\"fr\":\"") + _mac + "\",\"on\":1}";
+                _mqtt.publish(_outTopic.c_str(), alive.c_str());
+              }
               _mqttUp = true;
               _connEvent = true;
               _fails = 0;

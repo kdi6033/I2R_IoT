@@ -15,6 +15,7 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시�
 | i2r.link는 쓰지 않음 | i2r.link(mqtt.i2r.link)는 공식 펌웨어 전용입니다. 설정에 그 주소가 오면 접속하지 않고 Wi-Fi만 저장합니다 |
 | 공식 펌웨어 설정을 건드리지 않음 | 설정은 NVS `i2riot`에 따로 저장합니다. 공식 펌웨어를 다시 설치하면 원래 설정 그대로 i2r.link에 접속됩니다 (시간대 `i2r`만 함께 씀) |
 | 개인 정보를 내보내지 않음 | 이메일은 저장하지 않습니다. 토픽은 `i2r/{그룹}/in`, `out`이고, 그룹 기본값은 MAC으로 만든 코드(`d4d4da73873c`)입니다 |
+| 끊김은 서버가 알림 | MQTT 유언(lw)을 씁니다. 보드가 살아 있는 동안에는 추가 통신 없이, 전원이 꺼지거나 Wi-Fi가 끊기면 서버가 `{"c":"lw","fr":MAC,"on":0}`을 보냅니다. 화면은 이것으로 offline을 표시합니다 |
 | 비밀 값은 코드에 없음 | Wi-Fi와 MQTT 비밀번호는 USB로 받아 보드에 저장하고, 시리얼에 찍지 않습니다 |
 
 ## 설치
@@ -75,6 +76,7 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시�
 | `net.inTopic()`, `net.outTopic()` | 받기, 보내기 토픽 | 🛠️ |
 | `net.fails()`, `net.lastRc()`, `I2R_Net::rcText(rc)` | 접속 실패 횟수와 원인 (원인은 읽을 수 있는 말로) | 🛠️ |
 | `net.setRestartAfterFails(n)` | MQTT가 n번 연속 실패하면 다시 시작 (기본 0 = 안 함) | 🛠️ |
+| `net.setLastWill(false)` | 끊김 알림(lw) 끄기. 기본은 켜짐: 접속하면 `{"c":"lw","fr":MAC,"on":1}`, 보드가 갑자기 사라지면 서버가 `"on":0`을 대신 보냄 (최대 약 45초 뒤) | 🛠️ |
 
 ## 예제
 
@@ -82,6 +84,7 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시�
 |---|---|:---:|
 | 01_KoreaTime | 공유기에 접속해 인터넷에서 한국 시간을 받아 1초마다 시리얼에 보여 주기 | 🛠️ |
 | MqttTest | test.mosquitto.org로 5초마다 상태 보내기, `{"c":"gs"}`, `{"c":"echo"}`에 답하기 | 🛠️ |
+| 02_SimCheck | 실제 i2r-02/03/04가 시뮬레이터 가상 보드와 같은 메시지를 주고받기 (상태, `gs`, `so`, `st`, 오류). 시뮬레이터 제어 화면에 나타나고 `test_protocol.py`로 검사. **I2R_PLC도 설치** | 🛠️ |
 
 ## 프로토콜 확인: i2r 시뮬레이터
 
@@ -118,8 +121,9 @@ Windows는 `sim/start-sim.bat`을 두 번 눌러도 됩니다. 브라우저에 *
 python sim.py --server test.mosquitto.org --group <내 보드 그룹>
 ```
 
-- 제어 화면에는 상태 메시지에 `in`, `out`이 있는 보드만 나옵니다. MqttTest 예제처럼 `in`, `out`을 보내지 않는 보드는 목록에 나오지 않습니다.
-- 공통 프로토콜(`I2R_Link.h`, 만들 예정)을 쓰는 보드는 시뮬레이터의 규칙 시험으로 검사할 수 있습니다: `python test_protocol.py --server test.mosquitto.org --group <그룹> --mac <MAC>`
+- 제어 화면에는 상태 메시지에 `in`, `out`이 있는 보드만 나옵니다. **02_SimCheck** 예제를 올린 보드는 나오고, MqttTest처럼 `in`, `out`을 보내지 않는 보드는 나오지 않습니다.
+- 02_SimCheck는 시리얼 모니터에 시뮬레이터를 켤 명령(서버, 그룹)을 그대로 보여 줍니다.
+- 규칙 시험: `python test_protocol.py --server test.mosquitto.org --group <그룹> --mac <MAC>`. 02_SimCheck는 지금 `gs`, `so`, `st`, 오류까지라서 `bio`, `sch`, `bs` 시험은 실패하는 것이 정상입니다. 공통 부분은 확인이 끝나면 `I2R_Link.h`로 옮깁니다.
 
 **주의**: test.mosquitto.org는 공개 서버라 누구나 토픽을 보고 명령을 보낼 수 있습니다. 내 보드의 그룹과 MAC을 공개된 곳(GitHub, 카페 글)에 적지 말고, 개인 정보를 메시지에 넣지 마세요. 시뮬레이터만 쓸 때는 그룹을 정하지 않으면 실행할 때마다 `sim-` 뒤 임의 코드로 바뀝니다.
 
