@@ -32,7 +32,7 @@ i2r 보드(ESP32) **공통 통신 라이브러리**입니다. Wi-Fi, MQTT, 시�
    ```
    powershell -ExecutionPolicy Bypass -File tools\send-si.ps1
    ```
-   공유기 이름과 비밀번호를 넣고 나머지는 Enter를 누르면 test.mosquitto.org:1883, 그룹은 MAC 기반이 됩니다.
+   공유기 이름과 비밀번호를 넣은 뒤 서버를 번호로 고릅니다 (1 test.mosquitto.org, 2 broker.emqx.io, 3 직접 입력, 4 없음). 나머지를 모두 Enter로 넘기면 test.mosquitto.org:1883, 그룹은 MAC 기반이 됩니다. 시뮬레이터(i2r-server)와 같은 목록입니다.
 2. **i2r.link 기기연결 → COM 포트 (USB)**: 이메일 칸은 비우고, 서버 칸에 `test.mosquitto.org`(또는 내 서버)를 넣습니다. 포트, 아이디, 그룹은 1번 방법으로만 넣을 수 있습니다.
 3. **시리얼 모니터**(115200, 새 줄)에 한 줄:
    ```
@@ -115,7 +115,7 @@ Windows는 `sim/start-sim.bat`을 두 번 눌러도 됩니다. 브라우저에 *
 
 **4. 내 보드와 함께 보기**
 
-시뮬레이터를 **내 보드와 같은 서버, 같은 그룹**으로 켜면 내 보드도 제어 화면의 보드 목록에 나타납니다. 그룹은 보드 시리얼 모니터에 나오는 토픽 `i2r/<그룹>/out`의 가운데 부분입니다.
+시뮬레이터를 **내 보드와 같은 서버, 같은 그룹**으로 켜면 (서버는 `send-si.ps1`에서 고른 번호와 같은 것) 내 보드도 제어 화면의 보드 목록에 나타납니다. 그룹은 보드 시리얼 모니터에 나오는 토픽 `i2r/<그룹>/out`의 가운데 부분입니다.
 
 ```
 python sim.py --server test.mosquitto.org --group <내 보드 그룹>

@@ -25,10 +25,24 @@ if ($ssid -eq "") { Write-Host "SSID가 비어 있어 멈춥니다." -Foreground
 $pw = Read-Secret "공유기 비밀번호"
 
 Write-Host ""
-Write-Host "MQTT 서버: Enter = test.mosquitto.org (검증, 교육용 공개 서버) / none = MQTT 없이 Wi-Fi만 / 또는 주소 입력"
-$broker = Read-Host "MQTT 서버"
-if ($broker -eq "") { $broker = "test.mosquitto.org" }
-if ($broker -eq "none") { $broker = "" }
+# 목록은 i2r-server/sim/servers.py와 같게 맞춘다 (시뮬레이터와 같은 서버를 고르게).
+Write-Host "MQTT 서버를 고르세요 (시뮬레이터, 대시보드와 같은 서버여야 합니다)"
+Write-Host "  1) test.mosquitto.org   기본, 교육용 공개 서버"
+Write-Host "  2) broker.emqx.io       1번이 느리거나 안 될 때"
+Write-Host "  3) 직접 입력             i2r-05 로컬 서버, 아마존 서버"
+Write-Host "  4) 없음                 MQTT 없이 Wi-Fi만"
+$broker = $null
+while ($null -eq $broker) {
+  $pick = Read-Host "번호 (Enter = 1)"
+  switch ($pick) {
+    ""  { $broker = "test.mosquitto.org" }
+    "1" { $broker = "test.mosquitto.org" }
+    "2" { $broker = "broker.emqx.io" }
+    "3" { do { $broker = (Read-Host "서버 주소 (예: 192.168.0.50)").Trim() } while ($broker -eq "") }
+    "4" { $broker = "" }
+    default { Write-Host "  목록의 번호를 넣으세요." -ForegroundColor Yellow }
+  }
+}
 
 $cfg = [ordered]@{ c = "si"; ssid = $ssid; password = $pw; mqttBroker = $broker }
 if ($broker -ne "") {
