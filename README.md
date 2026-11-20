@@ -1,6 +1,6 @@
 # I2R_IoT
 
-## I2R_IoT는 왜 있나요
+## ✅ I2R_IoT는 왜 있나요
 
 **i2r 보드가 서버, 웹, 다른 보드와 이야기하는 방법(i2r 프로토콜)을 한 곳에서 처리하는 라이브러리**입니다.
 
@@ -27,7 +27,7 @@
 
 보드 입출력은 다루지 않습니다. PLC(i2r-02, i2r-03, i2r-04)는 [I2R_PLC](https://github.com/kdi6033/I2R_PLC), 로봇은 [OttoI2R](https://github.com/kdi6033/OttoI2R)와 함께 씁니다.
 
-## 설계 원칙
+## ✅ 설계 원칙
 
 | 원칙 | 내용 |
 |---|---|
@@ -39,14 +39,14 @@
 | 끊김은 서버가 알림 | MQTT 유언(lw)을 씁니다. 보드가 살아 있는 동안에는 추가 통신 없이, 전원이 꺼지거나 Wi-Fi가 끊기면 서버가 `{"c":"lw","fr":MAC,"on":0}`을 보냅니다. 화면은 이것으로 offline을 표시합니다 |
 | 비밀 값은 코드에 없음 | Wi-Fi와 MQTT 비밀번호는 USB로 받아 보드에 저장하고, 시리얼에 찍지 않습니다 |
 
-## 설치
+## ✅ 설치
 
 Arduino IDE **Library Manager**에서 `I2R_IoT`를 찾아 설치합니다 (2026-11-20 등록, 목록에 나타나기까지 하루쯤 걸릴 수 있음). **PubSubClient**, **ArduinoJson**(7 이상)도 함께 설치됩니다.
 아직 목록에 없으면 이 저장소를 `Documents/Arduino/libraries/I2R_IoT`에 받습니다.
 
 보드 설정: ESP32 Dev Module, Flash Size 8MB, Partition Scheme Huge APP. esp32 보드 패키지 3.0 이상.
 
-## 설정 보내기 (USB)
+## ✅ 설정 보내기 (USB)
 
 보드에 I2R_IoT 예제가 올라가 있을 때 아래 중 하나로 보냅니다. 저장되면 `{"c":"si","ok":true}` 응답 뒤 다시 시작합니다.
 
@@ -63,7 +63,7 @@ Arduino IDE **Library Manager**에서 `I2R_IoT`를 찾아 설치합니다 (2026-
 
 **MQTT나 웹으로 온 `si`는 받지 않습니다.** 남이 공개 서버로 내 보드 설정을 바꾸지 못하게 하기 위해서입니다.
 
-## 함수
+## ✅ 함수
 
 ### 시간 `I2R_Time`
 
@@ -121,14 +121,14 @@ i2r 프로토콜의 공통 부분([protocol.md](https://github.com/kdi6033/i2r-s
 
 `I2R_Link`가 저절로 처리하는 것: 접속 직후 5초 무시, 512바이트 넘으면 `too_long`, `fr`이 자기 MAC이면 무시, 다른 보드의 `lw`·`hello`·`err` 무시, `gs`(MAC 없어도 답함), 출력 명령에 MAC 없으면 `no_m`, 다른 보드 것은 조용히 무시, `st`/`setTime`, `id`를 답에 붙이기.
 
-## 예제
+## ✅ 예제
 
 | 예제 | 내용 | 상태 |
 |---|---|:---:|
 | 01_KoreaTime | 공유기에 접속해 인터넷에서 한국 시간을 받아 1초마다 시리얼에 보여 주기 | 🛠️ |
 | 02_PLC_Simulator | **시뮬레이터 화면으로 실제 PLC(i2r-02/03/04)를 제어하기.** 보드가 시뮬레이터 가상 보드와 같은 메시지를 주고받아, 제어 화면의 스위치를 누르면 실제 릴레이가 움직입니다 (상태, `gs`, `so`, `st`, 오류). `I2R_Link`를 쓰는 기본 예제: 보드 쪽 코드는 상태 값(`fillState`)과 `so`(`onCommand`)뿐. 시뮬레이터 화면의 "가상보드 프로그램 다운로드"가 올리는 프로그램입니다. **I2R_PLC도 설치** | 🛠️ |
 
-## 프로토콜 확인: i2r 시뮬레이터
+## ✅ 프로토콜 확인: i2r 시뮬레이터
 
 내 보드가 i2r 프로토콜대로 동작하는지는 **i2r 시뮬레이터에서 확인합니다.** 켜는 방법은 [i2r-server: 시뮬레이터로 시작하기](https://github.com/kdi6033/i2r-server#-시뮬레이터로-시작하기)에 있습니다.
 
@@ -157,7 +157,7 @@ i2r 프로토콜의 공통 부분([protocol.md](https://github.com/kdi6033/i2r-s
 - `test_protocol.py`로 시험하면 02_PLC_Simulator는 지금 `gs`, `so`, `st`, 오류까지라서 `bio`, `sch`, `bs` 시험은 실패하는 것이 정상입니다 (다음 단계에서 I2R_PLC 쪽에 넣음).
 - 공개 서버에서는 그룹과 MAC을 아는 사람이 보드에 명령을 보낼 수 있습니다. 내 보드의 그룹과 MAC을 공개된 곳에 적지 마세요.
 
-## 다음에 만들 것
+## ✅ 다음에 만들 것
 
 - `I2R_Web.h`: 보드 홈페이지 (stand alone, 입력 표시, 출력 스위치)
 - `I2R_PLC_IoT.h` (I2R_PLC 쪽): `so`, `bio`, `sch`, `bs`를 `I2R_Link`의 보드 명령으로 (사용자 스케치가 몇 줄로 줄어듦)
