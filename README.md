@@ -126,8 +126,7 @@ i2r 프로토콜의 공통 부분([protocol.md](https://github.com/kdi6033/i2r-s
 | 예제 | 내용 | 상태 |
 |---|---|:---:|
 | 01_KoreaTime | 공유기에 접속해 인터넷에서 한국 시간을 받아 1초마다 시리얼에 보여 주기 | 🛠️ |
-| MqttTest | test.mosquitto.org로 5초마다 상태 보내기, `{"c":"gs"}`, `{"c":"echo"}`에 답하기 | 🛠️ |
-| 02_SimCheck | 실제 i2r-02/03/04가 시뮬레이터 가상 보드와 같은 메시지를 주고받기 (상태, `gs`, `so`, `st`, 오류). `I2R_Link`를 쓰는 기본 예제: 보드 쪽 코드는 상태 값(`fillState`)과 `so`(`onCommand`)뿐. 시뮬레이터 제어 화면에 나타나고 `test_protocol.py`로 검사. **I2R_PLC도 설치** | 🛠️ |
+| 02_PLC_Simulator | **시뮬레이터 화면으로 실제 PLC(i2r-02/03/04)를 제어하기.** 보드가 시뮬레이터 가상 보드와 같은 메시지를 주고받아, 제어 화면의 스위치를 누르면 실제 릴레이가 움직입니다 (상태, `gs`, `so`, `st`, 오류). `I2R_Link`를 쓰는 기본 예제: 보드 쪽 코드는 상태 값(`fillState`)과 `so`(`onCommand`)뿐. 시뮬레이터 화면의 "가상보드 프로그램 다운로드"가 올리는 프로그램입니다. **I2R_PLC도 설치** | 🛠️ |
 
 ## 프로토콜 확인: i2r 시뮬레이터
 
@@ -147,15 +146,15 @@ i2r 프로토콜의 공통 부분([protocol.md](https://github.com/kdi6033/i2r-s
 | 하려는 것 | 보는 곳 |
 |---|---|
 | 시뮬레이터 켜기 (Claude Code 한 줄, 직접 켜기) | [i2r-server: 시뮬레이터로 시작하기](https://github.com/kdi6033/i2r-server#-시뮬레이터로-시작하기) |
-| 실제 보드에 02_SimCheck 올리기, Wi-Fi·서버 넣기, 시험 | [i2r-server: 실제 보드 연결하기](https://github.com/kdi6033/i2r-server#-실제-보드-연결하기) (방법 A Claude Code, B 직접, C 시뮬레이터 화면에서 USB로) |
+| 실제 보드에 02_PLC_Simulator 올리기, Wi-Fi·서버 넣기, 시험 | [i2r-server: 실제 보드 연결하기](https://github.com/kdi6033/i2r-server#-실제-보드-연결하기) (방법 A Claude Code, B 직접, C 시뮬레이터 화면에서 USB로) |
 | 메시지 형식 | [protocol.md](https://github.com/kdi6033/i2r-server/blob/main/protocol.md) |
 
 **이 라이브러리 예제와 관련해 알아 둘 것**
 
-- 시뮬레이터 제어 화면에는 상태 메시지에 `in`, `out`이 있는 보드만 나옵니다. **02_SimCheck**를 올린 보드는 나오고, MqttTest처럼 `in`, `out`을 보내지 않는 보드는 나오지 않습니다.
-- 02_SimCheck는 시리얼 모니터에 시뮬레이터를 켤 명령(서버, 그룹)을 보여 줍니다.
-- 02_SimCheck의 보드 LED(GPIO 2): **계속 켜짐** = 시작 중, Wi-Fi·MQTT 접속 중 / **1초에 한 번 깜박임** = 모두 접속됨.
-- `test_protocol.py`로 시험하면 02_SimCheck는 지금 `gs`, `so`, `st`, 오류까지라서 `bio`, `sch`, `bs` 시험은 실패하는 것이 정상입니다 (다음 단계에서 I2R_PLC 쪽에 넣음).
+- 시뮬레이터 제어 화면에는 상태 메시지에 `in`, `out`이 있는 보드만 나옵니다. **02_PLC_Simulator**를 올린 보드는 나오고, 01_KoreaTime처럼 `in`, `out`을 보내지 않는 보드는 나오지 않습니다.
+- 02_PLC_Simulator는 시리얼 모니터에 시뮬레이터를 켤 명령(서버, 그룹)을 보여 줍니다.
+- 02_PLC_Simulator의 보드 LED(GPIO 2): **계속 켜짐** = 시작 중, Wi-Fi·MQTT 접속 중 / **1초에 한 번 깜박임** = 모두 접속됨.
+- `test_protocol.py`로 시험하면 02_PLC_Simulator는 지금 `gs`, `so`, `st`, 오류까지라서 `bio`, `sch`, `bs` 시험은 실패하는 것이 정상입니다 (다음 단계에서 I2R_PLC 쪽에 넣음).
 - 공개 서버에서는 그룹과 MAC을 아는 사람이 보드에 명령을 보낼 수 있습니다. 내 보드의 그룹과 MAC을 공개된 곳에 적지 마세요.
 
 ## 다음에 만들 것

@@ -12,7 +12,7 @@
 //   onState(함수)   상태에 넣을 값: "in", "out" 배열과 센서 값 (못 읽은 센서는 넣지 않음)
 //   onCommand(함수) 보드 명령 (PLC: so, bio, sch, bs / Otto: ot ...). 모르는 명령이면 false
 //
-// 사용 예 (자세히는 examples/02_SimCheck)
+// 사용 예 (자세히는 examples/02_PLC_Simulator)
 //   I2R_Net net;  I2R_Time itime;  I2R_Link i2r(net, &itime);   (변수 이름 link는 시스템 함수와 겹쳐 쓰지 않는다)
 //   i2r.setBoard("i2r-03", "0.2.0", 4, 4);  i2r.addSensor("temp", 0.2);
 //   i2r.onState(fillState);  i2r.onCommand(onCommand);

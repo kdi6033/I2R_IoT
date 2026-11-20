@@ -1,4 +1,4 @@
-// 예제 2: 시뮬레이터로 확인하는 i2r 보드 (i2r-03, i2r-02, i2r-04)
+// 예제 2: 시뮬레이터 화면으로 제어하는 PLC (i2r-03, i2r-02, i2r-04)
 //
 // 실제 보드가 i2r 시뮬레이터의 가상 보드와 똑같은 메시지를 주고받는다.
 // 시뮬레이터 제어 화면에 이 보드가 가상 보드와 나란히 나타나고, 스위치를 누르면 실제 릴레이가 움직인다.
@@ -94,7 +94,7 @@ void updateLed() {
 // MQTT에 접속될 때마다 (hello와 상태는 I2R_Link가 이미 보냄)
 void onConnected() {
   Serial.println();
-  Serial.println("[SimCheck] MQTT 접속됨. 시뮬레이터를 이렇게 켜세요:");
+  Serial.println("[PLC_Simulator] MQTT 접속됨. 시뮬레이터를 이렇게 켜세요:");
   Serial.printf("  python sim.py --server %s", net.broker().c_str());
   if (net.port() != 1883) Serial.printf(" --port %u", net.port());
   Serial.printf(" --group %s\n", net.group().c_str());
@@ -119,7 +119,7 @@ void setup() {
   i2r.begin();
   net.begin();                 // 기다리지 않는다. Wi-Fi가 없어도 PLC는 돈다
 
-  Serial.println("==== I2R_IoT 02_SimCheck ====");
+  Serial.println("==== I2R_IoT 02_PLC_Simulator ====");
   Serial.printf("보드 %s, MAC %s\n", plc.type(), net.mac().c_str());
   if (!net.configured()) {
     Serial.println("Wi-Fi 설정이 없습니다. tools\\send-si.ps1 로 USB 설정을 보내세요.");
