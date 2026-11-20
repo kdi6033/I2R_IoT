@@ -46,6 +46,8 @@ public:
   static const size_t MSG_MAX = 1024;                // 메시지 한 개의 최대 길이
   static const unsigned long WIFI_RETRY_MS = 30000;  // Wi-Fi 다시 연결 간격
   static const unsigned long MQTT_RETRY_MS = 10000;  // MQTT 다시 접속 간격
+  static const uint32_t CONNECT_TIMEOUT_MS = 10000;  // 서버와 연결(TCP)을 기다리는 시간 (ESP32 기본 3초)
+  static const uint16_t SOCKET_TIMEOUT_SEC = 10;     // 서버 응답(접속 허락 등)을 기다리는 시간
   static const unsigned long IGNORE_MS = 5000;       // 켠 뒤 받은 메시지를 무시하는 시간 (서버에 남아 있던 옛 명령)
   static const uint16_t DEFAULT_PORT = 1883;
   static const uint16_t KEEPALIVE_SEC = 30;          // 서버와 살아 있음 확인 간격. 끊기면 약 1.5배 뒤 유언이 나간다
@@ -98,8 +100,11 @@ public:
     _mqtt.setClient(_plain);
     if (mqttConfigured()) _mqtt.setServer(_broker.c_str(), _port);
     _mqtt.setKeepAlive(KEEPALIVE_SEC);
-    // PubSubClient는 서버 응답을 기다리는 동안 CPU를 놓지 않는다. 작업 감시 타이머(5초)보다 짧게 한다
-    _mqtt.setSocketTimeout(2);
+    // 느린 네트워크(서버 응답 2~3초 이상)에서도 접속되도록 넉넉히 기다린다.
+    // PubSubClient는 기다리는 동안 CPU를 놓지 않지만, 통신 작업 우선순위가 0(IDLE과 같음)이라
+    // IDLE이 번갈아 돌아 작업 감시 타이머가 걸리지 않는다 (아래 xTaskCreatePinnedToCore)
+    _plain.setConnectionTimeout(CONNECT_TIMEOUT_MS);
+    _mqtt.setSocketTimeout(SOCKET_TIMEOUT_SEC);
     _mqtt.setBufferSize(MSG_MAX + 128);
     _mqtt.setCallback([this](char *topic, uint8_t *payload, unsigned int len) {
       onMqtt(payload, len);
