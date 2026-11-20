@@ -98,13 +98,16 @@ public:
     _mqtt.setClient(_plain);
     if (mqttConfigured()) _mqtt.setServer(_broker.c_str(), _port);
     _mqtt.setKeepAlive(KEEPALIVE_SEC);
-    _mqtt.setSocketTimeout(5);
+    // PubSubClient는 서버 응답을 기다리는 동안 CPU를 놓지 않는다. 작업 감시 타이머(5초)보다 짧게 한다
+    _mqtt.setSocketTimeout(2);
     _mqtt.setBufferSize(MSG_MAX + 128);
     _mqtt.setCallback([this](char *topic, uint8_t *payload, unsigned int len) {
       onMqtt(payload, len);
     });
 
-    xTaskCreatePinnedToCore(taskFn, "i2r_net", 8192, this, 1, &_task, 0);
+    // 우선순위 0 (IDLE과 같음): 응답을 기다리며 CPU를 붙잡고 있어도 IDLE 작업이 돌아
+    // "task_wdt: CPU 0: i2r_net" 재부팅이 나지 않는다. Wi-Fi 같은 시스템 작업은 더 높아 영향이 없다
+    xTaskCreatePinnedToCore(taskFn, "i2r_net", 8192, this, 0, &_task, 0);
   }
 
   // loop()에서 매번. 받은 메시지를 내 함수로 넘기고, USB 설정 줄을 읽는다.

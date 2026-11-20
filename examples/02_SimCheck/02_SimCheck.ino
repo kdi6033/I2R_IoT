@@ -21,6 +21,8 @@
 //      python sim.py --server test.mosquitto.org --group <이 보드의 그룹>
 // 3) 시뮬레이터 화면(http://localhost:8000) 제어 화면의 보드 목록에서 이 보드의 MAC을 고른다.
 //
+// [LED] 보드 LED(GPIO 2)가 계속 켜 있으면 시작 중이거나 Wi-Fi·MQTT 접속 중, 1초에 한 번 깜박이면 모두 접속됨.
+//
 // [주의]
 // - 시험할 때는 릴레이에 아무것도 연결하지 않는다 (시뮬레이터와 시험 스크립트가 출력을 켠다).
 // - 공개 서버라 그룹과 MAC을 아는 사람은 이 보드에 명령을 보낼 수 있다. 그룹과 MAC을 공개된 곳에 적지 않는다.
@@ -47,6 +49,8 @@ const float HUMI_STEP = 1.0;               // 습도가 이만큼 바뀌면 상�
 unsigned long connectedAt = 0;     // 마지막으로 MQTT에 접속한 시각
 unsigned long dirtySince = 0;      // 상태가 바뀌어 보내야 하는 때 (0 = 없음)
 unsigned long lastStateAt = 0;     // 마지막으로 상태를 보낸 시각
+unsigned long ledAt = 0;           // LED를 마지막으로 바꾼 시각
+bool ledOn = true;
 uint16_t lastInputs = 0;           // 지난번 입력 상태 (바뀌었는지 비교)
 float sentTemp = NAN, sentHumi = NAN;  // 마지막으로 보낸 온도, 습도
 
@@ -205,6 +209,18 @@ void onMessage(const char *json, I2R_Source from) {
   else sendErr(c, "unknown", id);  // bio, sch, bs는 다음 단계
 }
 
+// 보드 LED: Wi-Fi와 MQTT가 모두 접속되면 1초에 한 번 깜박이고(0.5초 켜짐, 0.5초 꺼짐), 아니면 계속 켜 둔다
+void updateLed() {
+  if (!net.mqttConnected()) {
+    if (!ledOn) plc.led(ledOn = true);
+    return;
+  }
+  if (millis() - ledAt >= 500) {
+    ledAt = millis();
+    plc.led(ledOn = !ledOn);
+  }
+}
+
 // MQTT에 접속될 때마다: 자기소개와 지금 상태
 void onConnect() {
   connectedAt = millis();
@@ -222,6 +238,7 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   plc.begin();                 // 출력은 모두 꺼진 상태에서 시작
+  plc.led(true);               // LED: 켜 있음 = 시작 중 / 접속 중, 1초에 한 번 깜박임 = Wi-Fi와 MQTT 모두 접속됨
   plc.onOutputChange(onOutput);
   itime.begin();
   net.onMessage(onMessage);
@@ -245,6 +262,7 @@ void loop() {
   plc.update();   // 1) PLC: 입력 읽기, 자동 끄기, 센서. Wi-Fi와 상관없이 항상 먼저
   itime.update();
   net.update();   // 2) 통신: 받은 명령 처리 (기다리지 않음)
+  updateLed();
 
   // 3) 상태가 바뀌었으면 보낼 준비
   uint16_t now = plc.inputBits();
